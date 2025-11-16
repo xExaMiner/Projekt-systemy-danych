@@ -1,0 +1,25 @@
+// server/db/index.js
+require('dotenv').config();  // If not already loaded in server.js, add it here
+console.log("Loaded ENV:", process.env);
+console.log('DB_PASSWORD type:', typeof process.env.DB_PASSWORD);
+console.log('DB_PASSWORD value (masked):', process.env.DB_PASSWORD ? '****' : 'undefined');  // Masks for security
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 5432,
+});
+
+// Optional: Test connection on startup
+pool.connect((err) => {
+  if (err) {
+    console.error('Database connection error:', err);
+  } else {
+    console.log('Connected to PostgreSQL database');
+  }
+});
+
+module.exports = { pool };

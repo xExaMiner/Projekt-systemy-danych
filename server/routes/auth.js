@@ -1,0 +1,74 @@
+// server/routes/auth.js
+const express = require('express');
+const router = express.Router();
+const { pool } = require('../db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { sanitize } = require('../utils/security');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+
+// Rejestracja
+router.post('/register', async (req, res) => {
+  const { username, password, email } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Brak danych' });
+
+  const sanitizedUsername = sanitize(username);
+  const sanitizedEmail = email ? sanitize(email) : null;
+
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO users (username, password_hash, email, role)
+       VALUES ($1, $2, $3, 'user') RETURNING id, username, role`,
+      [sanitizedUsername, hashed, sanitizedEmail]
+    );
+
+    const user = result.rows[0];
+
+    // Generujemy token po rejestracji
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      message: "Użytkownik utworzony",
+      token,
+      user
+    });
+
+  } catch (err) {
+    console.error('Registration error:', err);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Nazwa użytkownika zajęta' });
+    }
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Logowanie
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Brak danych' });
+
+  try {
+    const result = await pool.query(
+      `SELECT id, username, password_hash, role FROM users WHERE username = $1 AND is_deleted = FALSE`,
+      [sanitize(username)]
+    );
+    const user = result.rows[0];
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
+    }
+
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+  } catch (err) {
+    console.error('Login error:', err);  // Add this line for logging
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+module.exports = router;

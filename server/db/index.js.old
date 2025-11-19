@@ -6,8 +6,11 @@ console.log('DB_PASSWORD value (masked):', process.env.DB_PASSWORD ? '****' : 'u
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,  // This will be set on Render
-  ssl: { rejectUnauthorized: false }  // Required for Render's SSL; adjust if your pg version handles it automatically
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 5432,
 });
 
 // Optional: Test connection on startup

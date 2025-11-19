@@ -23,7 +23,6 @@ app.use(helmet({
       ],
       styleSrc: [
         "'self'",
-	"'unsafe-inline'",
         "https://rsms.me/"   // Font Inter CSS
       ],
       fontSrc: [

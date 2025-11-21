@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
     }
     // 3. Pobierz pogodę
     const weatherRes = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&lang=pl`
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=pl`
     );
     const weatherData = await weatherRes.json();
     // 4. Log zapytania
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
       [
         locationId,
         obsTime,
-        Math.round(weatherData.main.temp - 273.15),
+        weatherData.main.temp,
         weatherData.clouds.all,
         weatherData.main.humidity,
         weatherData.main.pressure,
@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
     const currentLocalTime = adjustedDate.toLocaleString('pl-PL', { timeZone: 'UTC' });
     res.json({
       city: weatherData.name,
-      temp: Math.round(weatherData.main.temp - 273.15),
+      temp: weatherData.main.temp,
       humidity: weatherData.main.humidity,
       wind: weatherData.wind.speed,
       windDir: weatherData.wind.deg,
@@ -94,13 +94,23 @@ router.post('/history', async (req, res) => {
     );
     const geoData = await geoRes.json();
     if (!geoData[0]) return res.status(404).json({ error: 'Miasto nie znalezione' });
-    const { lat, lon, name } = geoData[0];
-    // 2. Pobierz lub zapisz locationId (jak w '/')
+    const { lat, lon, name, country } = geoData[0];
+    // 2. Zapisz lokalizację (lub pobierz istniejącą)
     let locResult = await pool.query(
       `SELECT id FROM locations WHERE name = $1 AND latitude = $2 AND longitude = $3`,
       [name, lat, lon]
     );
-    let locationId = locResult.rows.length > 0 ? locResult.rows[0].id : null; // Nie insertuj ponownie, zakładamy istnieje po current
+    let locationId;
+    if (locResult.rows.length === 0) {
+      const insertLoc = await pool.query(
+        `INSERT INTO locations (name, latitude, longitude, country)
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [name, lat, lon, country || null]
+      );
+      locationId = insertLoc.rows[0].id;
+    } else {
+      locationId = locResult.rows[0].id;
+    }
     // 3. Oblicz timestamps
     const now = Math.floor(Date.now() / 1000);
     const dataPoints = [];
@@ -129,7 +139,7 @@ router.post('/history', async (req, res) => {
         await pool.query(
           `INSERT INTO api_requests (user_id, location_id, request_time, endpoint, parameters, response_status, response_data)
            VALUES ($1, $2, NOW(), $3, $4, $5, $6)`,
-          [userId, locationId, historyRes.url, { dt }, historyRes.status, historyData]
+          [userId, locationId, historyRes.url, {dt: dt}, historyRes.status, historyData]
         );
       }
       // Delay aby uniknąć rate limit (ok. 1/s)

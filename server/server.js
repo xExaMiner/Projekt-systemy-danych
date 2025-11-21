@@ -18,11 +18,10 @@ app.use(helmet({
       scriptSrc: [
         "'self'",
         "https://cdn.tailwindcss.com", // Tailwind CDN
-        "https://cdn.jsdelivr.net/npm/chart.js" // Chart.js CDN
       ],
       styleSrc: [
         "'self'",
-        "'unsafe-inline'",
+"'unsafe-inline'",
         "https://rsms.me/" // Font Inter CSS
       ],
       fontSrc: [

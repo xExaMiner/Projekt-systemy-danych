@@ -4,7 +4,6 @@ const { pool } = require('../db');
 const fetch = require('node-fetch').default;
 const { sanitize } = require('../utils/security');
 const API_KEY = process.env.OPENWEATHER_API_KEY;
-
 // Pobierz pogodę + zapisz do bazy
 router.post('/', async (req, res) => {
   const { location } = req.body;
@@ -18,13 +17,14 @@ router.post('/', async (req, res) => {
     const geoData = await geoRes.json();
     if (!geoData[0]) return res.status(404).json({ error: 'Miasto nie znalezione' });
     const { lat, lon, name, country } = geoData[0];
-    // 2. Zapisz lokalizację (lub pobierz istniejącą)
+    // 2. Zapisz lokalizację (lub pobierz/aktualizuj istniejącą) – wyszukuj po name, aby uniknąć duplikatów
     let locResult = await pool.query(
-      `SELECT id FROM locations WHERE name = $1 AND latitude = $2 AND longitude = $3`,
-      [name, lat, lon]
+      `SELECT id, latitude, longitude, country FROM locations WHERE name = $1`,
+      [name]
     );
     let locationId;
     if (locResult.rows.length === 0) {
+      // Insert nowej, jeśli nie istnieje
       const insertLoc = await pool.query(
         `INSERT INTO locations (name, latitude, longitude, country)
          VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -32,7 +32,21 @@ router.post('/', async (req, res) => {
       );
       locationId = insertLoc.rows[0].id;
     } else {
+      // Użyj istniejącej i aktualizuj coords/country, jeśli różnią się
       locationId = locResult.rows[0].id;
+      const existingLat = locResult.rows[0].latitude;
+      const existingLon = locResult.rows[0].longitude;
+      const existingCountry = locResult.rows[0].country;
+      if (
+        Math.abs(existingLat - lat) > 0.0001 ||
+        Math.abs(existingLon - lon) > 0.0001 ||
+        existingCountry !== (country || null)
+      ) {
+        await pool.query(
+          `UPDATE locations SET latitude = $1, longitude = $2, country = $3 WHERE id = $4`,
+          [lat, lon, country || null, locationId]
+        );
+      }
     }
     // 3. Pobierz pogodę
     const weatherRes = await fetch(
@@ -45,8 +59,8 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, NOW(), $3, $4, $5, $6)`,
       [userId, locationId, weatherRes.url, {}, weatherRes.status, weatherData]
     );
-    // 5. Zapisz obserwację (używając rzeczywistego czasu obserwacji z API)
-    const obsTime = new Date(weatherData.dt * 1000 + weatherData.timezone * 1000);
+    // 5. Zapisz obserwację (używając czasu zapytania)
+    const obsTime = new Date();
     await pool.query(
       `INSERT INTO weather_observations
        (location_id, observation_time, temperature, clouds, humidity, pressure, wind_speed, wind_direction, weather_description, raw_data)
@@ -64,6 +78,24 @@ router.post('/', async (req, res) => {
         weatherData
       ]
     );
+    // Pobierz dane historyczne z ostatnich 24 godzin
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const historyResult = await pool.query(
+      `SELECT observation_time, temperature, humidity, wind_speed AS wind, pressure, clouds, wind_direction AS windDir
+       FROM weather_observations
+       WHERE location_id = $1 AND observation_time >= $2
+       ORDER BY observation_time ASC`,
+      [locationId, twentyFourHoursAgo]
+    );
+    const history = historyResult.rows.map(row => ({
+      time: row.observation_time.toISOString(),
+      temp: row.temperature,
+      humidity: row.humidity,
+      wind: row.wind,
+      windDir: row.windDir,
+      pressure: row.pressure,
+      clouds: row.clouds
+    }));
     // Oblicz bieżący czas lokalny dla wyświetlenia (używając offsetu timezone)
     const adjustedDate = new Date(Date.now() + weatherData.timezone * 1000);
     const currentLocalTime = adjustedDate.toLocaleString('pl-PL', { timeZone: 'UTC' });
@@ -75,8 +107,10 @@ router.post('/', async (req, res) => {
       windDir: weatherData.wind.deg,
       pressure: weatherData.main.pressure,
       clouds: weatherData.clouds.all,
-      time: currentLocalTime,  // Użyj bieżącego czasu zamiast czasu obserwacji
-      icon: getIcon(weatherData.clouds.all)
+      time: currentLocalTime, // Użyj bieżącego czasu zamiast czasu obserwacji
+      icon: getIcon(weatherData.clouds.all),
+      history: history,
+      timezone: weatherData.timezone
     });
   } catch (err) {
     console.error(err);

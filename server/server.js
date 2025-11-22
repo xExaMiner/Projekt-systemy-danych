@@ -18,15 +18,20 @@ app.use(helmet({
       scriptSrc: [
         "'self'",
         "https://cdn.tailwindcss.com", // Tailwind CDN
+        "https://cdn.jsdelivr.net" // Chart.js CDN
       ],
       styleSrc: [
         "'self'",
-"'unsafe-inline'",
+        "'unsafe-inline'",
         "https://rsms.me/" // Font Inter CSS
       ],
       fontSrc: [
         "'self'",
         "https://rsms.me/" // Jeśli fonty są ładowane bezpośrednio
+      ],
+      connectSrc: [
+        "'self'",
+        "https://cdn.jsdelivr.net" // Allow source maps
       ]
     }
   }
@@ -65,5 +70,5 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 app.listen(PORT, () => {
-  console.log(`Serwer działa na porcie ${PORT}`);
+  console.log(`Serwer działa na http://localhost:${PORT}`);
 });

@@ -93,8 +93,13 @@
       </div>
       <!-- Error Message -->
       <div id="errorMsg" class="hidden text-red-600 text-center font-medium"></div>
+      <!-- Weather Chart -->
+      <canvas id="weatherChart" class="mt-6 hidden w-full h-64"></canvas>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
       <button id="loginBtn" class="px-4 py-2 text-blue-600 hover:underline">Zaloguj</button>
       <button id="registerBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-2">Zarejestruj</button>
       <div id="userInfo" class="hidden ml-4 items-center">
+	<button id="adminBtn" class="hidden ml-2 px-4 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700">Admin</button>
         <span id="username" class="font-medium text-gray-700"></span>
         <button id="logoutBtn" class="ml-2 text-red-600 text-sm hover:underline">Wyloguj</button>
       </div>
@@ -39,62 +40,66 @@
   </div>
   <!-- Główna treść (ukryta przed logowaniem) -->
   <div class="flex-1 flex items-center justify-center p-4">
-    <div id="weatherContainer" class="hidden w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6">
-      <h1 class="text-2xl font-bold text-center text-gray-800">Stacja Pogody</h1>
-      <!-- Input + Button -->
-      <div class="flex gap-2">
-        <input
-          id="locationInput"
-          type="text"
-          placeholder="Wpisz miasto..."
-          value="Bydgoszcz"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          id="fetchBtn"
-          class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-        >
-          Sprawdź
-        </button>
-      </div>
-      <!-- Weather Card -->
-      <div id="weatherCard" class="hidden space-y-4 p-5 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl">
-        <div class="text-center">
-          <div id="icon" class="text-6xl">☀</div>
-          <h2 id="city" class="text-xl font-semibold text-gray-800 mt-2"></h2>
-          <p id="time" class="text-sm text-gray-600"></p>
+    <div id="weatherContainer" class="hidden w-full bg-white rounded-2xl shadow-xl p-6 flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
+      <div class="w-full md:w-1/2 space-y-6">
+        <h1 class="text-2xl font-bold text-center text-gray-800">Stacja Pogody</h1>
+        <!-- Input + Button -->
+        <div class="flex gap-2">
+          <input
+            id="locationInput"
+            type="text"
+            placeholder="Wpisz miasto..."
+            value="Bydgoszcz"
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            id="fetchBtn"
+            class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+          >
+            Sprawdź
+          </button>
         </div>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Temperatura</div>
-            <div id="temp" class="font-bold text-lg"></div>
+        <!-- Weather Card -->
+        <div id="weatherCard" class="hidden space-y-4 p-5 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl">
+          <div class="text-center">
+            <div id="icon" class="text-6xl">☀</div>
+            <h2 id="city" class="text-xl font-semibold text-gray-800 mt-2"></h2>
+            <p id="time" class="text-sm text-gray-600"></p>
           </div>
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Wilgotność</div>
-            <div id="humidity" class="font-bold text-lg"></div>
-          </div>
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Wiatr</div>
-            <div id="wind" class="font-bold text-lg"></div>
-          </div>
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Ciśnienie</div>
-            <div id="pressure" class="font-bold text-lg"></div>
-          </div>
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Zachmurzenie</div>
-            <div id="clouds" class="font-bold text-lg"></div>
-          </div>
-          <div class="bg-white/70 rounded-lg p-3">
-            <div class="text-gray-600">Kierunek wiatru</div>
-            <div id="windDir" class="font-bold text-lg"></div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Temperatura</div>
+              <div id="temp" class="font-bold text-lg"></div>
+            </div>
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Wilgotność</div>
+              <div id="humidity" class="font-bold text-lg"></div>
+            </div>
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Wiatr</div>
+              <div id="wind" class="font-bold text-lg"></div>
+            </div>
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Ciśnienie</div>
+              <div id="pressure" class="font-bold text-lg"></div>
+            </div>
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Zachmurzenie</div>
+              <div id="clouds" class="font-bold text-lg"></div>
+            </div>
+            <div class="bg-white/70 rounded-lg p-3">
+              <div class="text-gray-600">Kierunek wiatru</div>
+              <div id="windDir" class="font-bold text-lg"></div>
+            </div>
           </div>
         </div>
+        <!-- Error Message -->
+        <div id="errorMsg" class="hidden text-red-600 text-center font-medium"></div>
       </div>
-      <!-- Error Message -->
-      <div id="errorMsg" class="hidden text-red-600 text-center font-medium"></div>
-      <!-- Weather Chart -->
-      <canvas id="weatherChart" class="mt-6 hidden w-full h-64"></canvas>
+      <div class="w-full md:w-1/2">
+        <!-- Weather Chart -->
+        <canvas id="weatherChart" class="hidden w-full h-64"></canvas>
+      </div>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>

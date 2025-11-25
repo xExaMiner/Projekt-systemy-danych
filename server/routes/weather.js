@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
     // Pobierz dane historyczne z ostatnich 24 godzin
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const historyResult = await pool.query(
-      `SELECT observation_time, temperature, humidity, wind_speed AS wind, pressure, clouds, wind_direction AS windDir
+      `SELECT observation_time, temperature, humidity, wind_speed AS wind, pressure, clouds, wind_direction AS "windDir"
        FROM weather_observations
        WHERE location_id = $1 AND observation_time >= $2
        ORDER BY observation_time ASC`,

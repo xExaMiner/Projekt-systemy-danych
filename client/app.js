@@ -15,7 +15,8 @@ const elements = {
   icon: document.getElementById("icon"),
   container: document.getElementById("weatherContainer"),
   dt: document.getElementById("dt"),
-  timezone: document.getElementById("timezone")
+  timezone: document.getElementById("timezone"),
+  admin: document.getElementById("adminBtn")
 };
 // === IKONY POGODOWE ===
 const icons = {
@@ -138,7 +139,7 @@ function displayHistory(history, timezone) {
           <th class="border px-2 py-1">Temp (°C)</th>
           <th class="border px-2 py-1">Wilgotność (%)</th>
           <th class="border px-2 py-1">Wiatr (m/s)</th>
-          <th class="border px-2 py-1">Kierunek wiatru</th>
+          <th class="border px-2 py-1">Kierunek wiatru(°)</th>
           <th class="border px-2 py-1">Ciśnienie (hPa)</th>
           <th class="border px-2 py-1">Zachmurzenie (%)</th>
         </tr>
@@ -349,12 +350,20 @@ function updateAuthUI(user) {
   document.getElementById('registerBtn').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
   document.getElementById('username').textContent = user.username;
+  if (user.username === 'Admin') {
+    elements.admin.classList.remove('hidden');
+  }
 }
 // === EVENTY ===
 elements.btn.addEventListener("click", fetchWeather);
 elements.input.addEventListener("keypress", (e) => {
   if (e.key === "Enter") fetchWeather();
 });
+if (elements.admin) {
+  elements.admin.addEventListener('click', () => {
+    window.location.href = '/admin.html';
+});
+}
 // === START ===
 window.addEventListener("load", () => {
   elements.input.value = "Bydgoszcz";

@@ -48,6 +48,13 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 // JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.username === 'Admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Dostęp tylko dla Admina' });
+  }
+};
 // Autoryzacja
 const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -61,6 +68,19 @@ const authenticate = (req, res, next) => {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/weather', authenticate, require('./routes/weather'));
+app.post('/api/delete-old', authenticate, isAdmin, async (req, res) => {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const result = await pool.query(
+      'DELETE FROM weather_observations WHERE created_at < $1',
+      [twentyFourHoursAgo]
+    );
+    res.json({ message: `Usunięto ${result.rowCount} rekordów.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Błąd podczas usuwania danych' });
+  }
+});
 // NOWY ENDPOINT: Weryfikacja tokenu
 app.get('/api/auth/me', authenticate, (req, res) => {
   res.json({ username: req.user.username });

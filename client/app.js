@@ -106,11 +106,12 @@ function displayHistory(history, timezone) {
 
   // Stwórz lub wyczyść kontener na historię (dodaj do weatherContainer jeśli nie istnieje)
   let historyDiv = document.getElementById('historyDiv');
+  const chartElement = document.getElementById('weatherChart');
   if (!historyDiv) {
     historyDiv = document.createElement('div');
     historyDiv.id = 'historyDiv';
     historyDiv.classList.add('mt-4'); // Dodaj styl, jeśli masz CSS (margines top)
-    elements.container.appendChild(historyDiv);
+    chartElement.insertAdjacentElement('afterend', historyDiv);
   }
   historyDiv.innerHTML = '';
 

@@ -91,6 +91,16 @@ async function fetchWeather() {
     // Nowa sekcja: Wyświetl wszystkie obserwacje z historii (filtrowane do 24h wstecz)
     displayHistory(history, data.timezone);
     displayForecast(forecast, data.timezone);
+    // Wyświetl komentarz AI
+    const commentary = data.commentary || '';
+    const commentaryDiv = document.getElementById('aiCommentary');
+    const commentaryText = document.getElementById('commentaryText');
+    if (commentary) {
+      commentaryText.textContent = commentary;
+      commentaryDiv.classList.remove('hidden');
+    } else {
+      commentaryDiv.classList.add('hidden');
+    }
 
   } catch (err) {
     showError(err.message);

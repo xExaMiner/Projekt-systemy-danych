@@ -110,6 +110,47 @@ router.post('/', async (req, res) => {
       pressure: hour.pressure,
       clouds: hour.clouds
     }));
+    // Zapisz prognozę do bazy danych
+    for (const hour of forecast) {
+      await pool.query(
+        `INSERT INTO weather_forecasts (location_id, forecast_time, predicted_temperature, predicted_humidity, predicted_pressure, predicted_wind_speed, predicted_wind_direction, predicted_clouds, generation_method, model_used)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [locationId, hour.time, hour.temp, hour.humidity, hour.pressure, hour.wind, hour.windDir, hour.clouds, 'api', 'openweathermap']
+      );
+    }
+    // Generuj komentarz AI za pomocą Hugging Face
+    let commentary = '';
+try {
+  const prompt = `Jesteś doświadczonym meteorologiem. Na podstawie poniższej prognozy pogody na następne 24 godziny dla miasta ${weatherData.name}, napisz profesjonalną prognozę jak prawdziwy prezenter pogody w języku polskim. Nie używaj znaków specjalnych i wykorzystaj od 300 do 500 znaków. Prognoza: ${JSON.stringify(forecast)}`;
+
+  const aiRes = await fetch('https://router.huggingface.co/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.HF_TOKEN}`
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/Llama-3.3-70B-Instruct',  // Or try a specific variant/provider like 'deepseek-ai/DeepSeek-V3:fireworks-ai' if needed
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 200,  // Equivalent to max_new_tokens
+      temperature: 0.7
+    })
+  });
+
+  if (!aiRes.ok) {
+    console.error('HF API error:', aiRes.status, await aiRes.text());
+    commentary = 'Nie udało się wygenerować komentarza AI.';
+  } else {
+    const aiData = await aiRes.json();
+    console.log('HF response:', aiData);
+    commentary = aiData.choices[0]?.message?.content?.trim() || 'Nie udało się wygenerować komentarza.';
+  }
+} catch (err) {
+  console.error('AI error:', err);
+  commentary = 'Błąd generowania komentarza AI.';
+}
     // Oblicz bieżący czas lokalny dla wyświetlenia (używając offsetu timezone)
     const adjustedDate = new Date(Date.now() + weatherData.timezone * 1000);
     const currentLocalTime = adjustedDate.toLocaleString('pl-PL', { timeZone: 'UTC' });
@@ -125,6 +166,7 @@ router.post('/', async (req, res) => {
       icon: getIcon(weatherData.clouds.all),
       history: history,
       forecast: forecast,
+      commentary: commentary,
       timezone: weatherData.timezone
     });
   } catch (err) {

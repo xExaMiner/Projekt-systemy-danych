@@ -103,7 +103,7 @@ router.post('/', async (req, res) => {
     const forecastData = await forecastRes.json();
     const forecast = forecastData.hourly.slice(1, 25).map(hour => ({
       time: new Date(hour.dt * 1000).toISOString(),
-      temp: Math.round(hour.temp - 273.15),
+      temp: (hour.temp - 273.15).toFixed(2),
       humidity: hour.humidity,
       wind: hour.wind_speed,
       windDir: hour.wind_deg,

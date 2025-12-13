@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
     // Generuj komentarz AI za pomocą Hugging Face
     let commentary = '';
 try {
-  const prompt = `Jesteś doświadczonym meteorologiem. Na podstawie poniższej prognozy pogody na następne 24 godziny dla miasta ${weatherData.name}, napisz profesjonalną prognozę jak prawdziwy prezenter pogody w języku polskim. Nie używaj znaków specjalnych i wykorzystaj od 300 do 500 znaków. Prognoza: ${JSON.stringify(forecast)}`;
+  const prompt = `Jesteś doświadczonym meteorologiem. Na podstawie poniższej prognozy pogody na następne 24 godziny dla miasta ${weatherData.name}, napisz profesjonalną prognozę jak prawdziwy prezenter pogody w języku polskim. Nie używaj znaków specjalnych i wykorzystaj od 300 do 500 znaków. Pamiętaj, aby pisać pełnymi zdaniami. Prognoza: ${JSON.stringify(forecast)}`;
 
   const aiRes = await fetch('https://router.huggingface.co/v1/chat/completions', {
     method: 'POST',

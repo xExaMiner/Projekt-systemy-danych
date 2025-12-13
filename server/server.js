@@ -71,11 +71,21 @@ app.use('/api/weather', authenticate, require('./routes/weather'));
 app.post('/api/delete-old', authenticate, isAdmin, async (req, res) => {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const result = await pool.query(
+    // Delete from weather_observations
+    const obsResult = await pool.query(
       'DELETE FROM weather_observations WHERE created_at < $1',
       [twentyFourHoursAgo]
     );
-    res.json({ message: `Usunięto ${result.rowCount} rekordów.` });
+
+    // Delete from weather_forecasts
+    const forecastResult = await pool.query(
+      'DELETE FROM weather_forecasts WHERE created_at < $1',
+      [twentyFourHoursAgo]
+    );
+
+    res.json({
+      message: `Usunięto ${obsResult.rowCount} rekordów z weather_observations oraz ${forecastResult.rowCount} rekordów z weather_forecasts.`
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Błąd podczas usuwania danych' });

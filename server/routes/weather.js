@@ -96,6 +96,20 @@ router.post('/', async (req, res) => {
       pressure: row.pressure,
       clouds: row.clouds
     }));
+    // Pobierz prognozę na następne 24 godziny
+    const forecastRes = await fetch(
+      `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,daily,alerts&appid=${API_KEY}`
+    );
+    const forecastData = await forecastRes.json();
+    const forecast = forecastData.hourly.slice(1, 25).map(hour => ({
+      time: new Date(hour.dt * 1000).toISOString(),
+      temp: Math.round(hour.temp - 273.15),
+      humidity: hour.humidity,
+      wind: hour.wind_speed,
+      windDir: hour.wind_deg,
+      pressure: hour.pressure,
+      clouds: hour.clouds
+    }));
     // Oblicz bieżący czas lokalny dla wyświetlenia (używając offsetu timezone)
     const adjustedDate = new Date(Date.now() + weatherData.timezone * 1000);
     const currentLocalTime = adjustedDate.toLocaleString('pl-PL', { timeZone: 'UTC' });
@@ -110,6 +124,7 @@ router.post('/', async (req, res) => {
       time: currentLocalTime, // Użyj bieżącego czasu zamiast czasu obserwacji
       icon: getIcon(weatherData.clouds.all),
       history: history,
+      forecast: forecast,
       timezone: weatherData.timezone
     });
   } catch (err) {

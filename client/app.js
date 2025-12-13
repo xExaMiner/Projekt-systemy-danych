@@ -43,6 +43,7 @@ function hideError() {
   elements.error.classList.add("hidden");
 }
 let chart = null;
+let forecastChart = null;
 // Set Luxon locale
 luxon.Settings.defaultLocale = 'pl';
 // === POGODA Z BACKENDU ===
@@ -83,10 +84,13 @@ async function fetchWeather() {
     const chartElement = document.getElementById('weatherChart');
     chartElement.classList.remove('hidden');
     let history = data.history || [];
+    let forecast = data.forecast || [];
     createChart(history, data.timezone);
+    createForecastChart(forecast, data.timezone);
 
     // Nowa sekcja: Wyświetl wszystkie obserwacje z historii (filtrowane do 24h wstecz)
     displayHistory(history, data.timezone);
+    displayForecast(forecast, data.timezone);
 
   } catch (err) {
     showError(err.message);
@@ -169,6 +173,78 @@ function displayHistory(history, timezone) {
   historyDiv.innerHTML = tableHTML;
 }
 
+// Nowa funkcja: Wyświetl prognozę w tabeli
+function displayForecast(forecast, timezone) {
+  let filteredForecast = forecast;
+
+  // Sortuj rosnąco po czasie (najbliższe na górze)
+  filteredForecast.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+  // Stwórz lub wyczyść kontener na prognozę (dodaj do forecastChart jeśli nie istnieje)
+  let forecastDiv = document.getElementById('forecastDiv');
+  const forecastChartElement = document.getElementById('forecastChart');
+  if (!forecastDiv) {
+    forecastDiv = document.createElement('div');
+    forecastDiv.id = 'forecastDiv';
+    forecastDiv.classList.add('mt-4'); // Dodaj styl, jeśli masz CSS (margines top)
+    forecastChartElement.insertAdjacentElement('afterend', forecastDiv);
+  }
+  forecastDiv.innerHTML = '';
+
+  if (filteredForecast.length === 0) {
+    forecastDiv.innerHTML = '<p>Brak prognoz na następne 24 godziny.</p>';
+    return;
+  }
+
+  // Użyj luxon do formatowania czasu (zakładam h.time w ISO lub parseowalnym formacie)
+  const DateTime = luxon.DateTime;
+
+  // Konwertuj timezone (liczba sekund) na string 'UTC+01:00' itp.
+  const offsetSeconds = timezone;
+  const hours = Math.floor(offsetSeconds / 3600);
+  const minutes = Math.floor(Math.abs(offsetSeconds % 3600) / 60);
+  const sign = offsetSeconds >= 0 ? '+' : '-';
+  const zoneStr = `UTC${sign}${Math.abs(hours).toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+  // Stwórz tabelę
+  let tableHTML = `
+    <h3>Prognoza na następne 24 godziny</h3>
+    <table class="table-auto w-full border-collapse border border-gray-300">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="border px-2 py-1">Czas</th>
+          <th class="border px-2 py-1">Temp (°C)</th>
+          <th class="border px-2 py-1">Wilgotność (%)</th>
+          <th class="border px-2 py-1">Wiatr (m/s)</th>
+          <th class="border px-2 py-1">Kierunek wiatru(°)</th>
+          <th class="border px-2 py-1">Ciśnienie (hPa)</th>
+          <th class="border px-2 py-1">Zachmurzenie (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  filteredForecast.forEach(h => {
+    const dt = DateTime.fromISO(h.time, { zone: zoneStr });
+    const formattedTime = dt.isValid ? dt.toFormat('dd MMM yyyy HH:mm') : 'N/A';
+    const windDir = getWindDirection(h.windDir);
+    tableHTML += `
+      <tr>
+        <td class="border px-2 py-1">${formattedTime}</td>
+        <td class="border px-2 py-1">${h.temp ?? 'N/A'}</td>
+        <td class="border px-2 py-1">${h.humidity ?? 'N/A'}</td>
+        <td class="border px-2 py-1">${h.wind ?? 'N/A'}</td>
+        <td class="border px-2 py-1">${windDir}</td>
+        <td class="border px-2 py-1">${h.pressure ?? 'N/A'}</td>
+        <td class="border px-2 py-1">${h.clouds ?? 'N/A'}</td>
+      </tr>
+    `;
+  });
+
+  tableHTML += '</tbody></table>';
+  forecastDiv.innerHTML = tableHTML;
+}
+
 // Funkcja do tworzenia wykresu
 function createChart(history, timezone) {
   const ctx = document.getElementById('weatherChart').getContext('2d');
@@ -226,6 +302,89 @@ function createChart(history, timezone) {
           },
           min: twentyFourHoursAgo,
           max: now
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temperatura (°C)'
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          },
+          title: {
+            display: true,
+            text: 'Wilgotność (%) / Wiatr (m/s)'
+          }
+        }
+      }
+    }
+  });
+}
+// Funkcja do tworzenia wykresu prognozy
+function createForecastChart(forecast, timezone) {
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  if (forecastChart) {
+    forecastChart.destroy();
+  }
+  const tempData = forecast.map(h => ({ x: h.time, y: h.temp }));
+  const humidityData = forecast.map(h => ({ x: h.time, y: h.humidity }));
+  const windData = forecast.map(h => ({ x: h.time, y: h.wind }));
+  const now = Date.now();
+  const twentyFourHoursLater = now + 24 * 60 * 60 * 1000;
+  forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Temperatura (°C)',
+          data: tempData,
+          borderColor: 'rgb(255, 99, 132)',
+          yAxisID: 'y',
+          tension: 0.1
+        },
+        {
+          label: 'Wilgotność (%)',
+          data: humidityData,
+          borderColor: 'rgb(54, 162, 235)',
+          yAxisID: 'y1',
+          tension: 0.1
+        },
+        {
+          label: 'Wiatr (m/s)',
+          data: windData,
+          borderColor: 'rgb(75, 192, 192)',
+          yAxisID: 'y1',
+          tension: 0.1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      adapters: {
+        date: {
+          locale: 'pl'
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+            displayFormats: {
+              hour: 'HH:mm',
+              day: 'd MMM'
+            }
+          },
+          min: now,
+          max: twentyFourHoursLater
         },
         y: {
           type: 'linear',

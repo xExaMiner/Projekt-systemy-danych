@@ -40,8 +40,8 @@
   </div>
   <!-- Główna treść (ukryta przed logowaniem) -->
   <div class="flex-1 flex items-center justify-center p-4">
-    <div id="weatherContainer" class="hidden w-full bg-white rounded-2xl shadow-xl p-6 flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
-      <div class="w-full md:w-1/2 space-y-6">
+    <div id="weatherContainer" class="hidden w-full bg-white rounded-2xl shadow-xl p-6 flex flex-col space-y-6">
+      <div class="w-full space-y-6">
         <h1 class="text-2xl font-bold text-center text-gray-800">Stacja Pogody</h1>
         <!-- Input + Button -->
         <div class="flex gap-2">
@@ -96,9 +96,15 @@
         <!-- Error Message -->
         <div id="errorMsg" class="hidden text-red-600 text-center font-medium"></div>
       </div>
-      <div class="w-full md:w-1/2">
-        <!-- Weather Chart -->
-        <canvas id="weatherChart" class="hidden w-full h-64"></canvas>
+      <div class="w-full flex space-x-4">
+        <div class="flex-1">
+          <!-- Weather Chart -->
+          <canvas id="weatherChart" class="hidden w-full h-64"></canvas>
+        </div>
+        <div class="flex-1">
+          <!-- Forecast Chart -->
+          <canvas id="forecastChart" class="hidden w-full h-64"></canvas>
+        </div>
       </div>
     </div>
   </div>

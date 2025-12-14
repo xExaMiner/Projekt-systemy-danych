@@ -130,11 +130,11 @@ try {
       'Authorization': `Bearer ${process.env.HF_TOKEN}`
     },
     body: JSON.stringify({
-      model: 'meta-llama/Llama-3.3-70B-Instruct',  // Or try a specific variant/provider like 'deepseek-ai/DeepSeek-V3:fireworks-ai' if needed
+      model: 'swiss-ai/Apertus-70B-Instruct-2509',  // Or try a specific variant/provider like meta-llama/Llama-3.3-70B-Instruct or deepseek-ai/DeepSeek-V3 if needed
       messages: [
         { role: 'user', content: prompt }
       ],
-      max_tokens: 200,  // Equivalent to max_new_tokens
+      max_tokens: 300,  // Equivalent to max_new_tokens
       temperature: 0.7
     })
   });
